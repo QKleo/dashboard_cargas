@@ -82,7 +82,7 @@
         <option value="30d">Últimos 30 días</option>
         <option value="month">Mes actual</option>
       </select>
-      <button id="applyBtn">Aplicar</button>
+      <button id="applyBtn" onclick="applyFilters()">Aplicar</button>
     </div>
   </header>
 
@@ -330,7 +330,7 @@ quick.addEventListener("change", ()=>{
   applyFilters();
 });
 
-applyBtn.addEventListener("click", applyFilters);
+//applyBtn.addEventListener("click", applyFilters());
 
 function toDate(str){
   // str = "15/01/2026"
