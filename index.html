@@ -140,6 +140,7 @@ const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60
 async function loadData() {
   //const url = "TU_URL_DEL_CSV";
   const res = await fetch(url);
+  
   const text = await res.text();
 
   // Detectar separador (coma o punto y coma)
@@ -148,19 +149,25 @@ async function loadData() {
 
   const rows = text.trim().split("\n").map(r => r.split(sep));
 
-  console.log("Encabezados:", rows[0]); // para debug
+  console.log("Encabezados:", rows[0]); // debug
 
-  data = rows.slice(1).map(r => ({
-    fecha: r[0],
-    //tiempo: r[1],
-    chofer: r[1],
-    dominio: r[2],
-    cargadero: r[3],
-    m3: parseFloat(r[4])
-  }));
+  data = rows.slice(1).map(r => {
+    const fechaCompleta = r[0]; // ej: "15/01/2026 17:05:58"
+    const [fechaParte, horaParte] = fechaCompleta.split(" ");
+    return {
+      fecha: fechaParte,   // "15/01/2026"
+      tiempo: horaParte,     // "17:05:58"
+      chofer: r[1],
+      dominio: r[2],
+      cargadero: r[3],
+      m3: parseFloat(r[4])
+    };
+  });
 
   console.log("Datos parseados:", data); // debug
   applyFilters();
+
+
 }
 
 loadData().catch(err => console.error("Error cargando CSV:", err));
