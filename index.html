@@ -153,15 +153,17 @@ async function loadData() {
 
   data = rows.slice(1).map(r => {
     const fechaCompleta = r[0]; // ej: "15/01/2026 17:05:58"
-    const [fechaParte, horaParte] = fechaCompleta.split(" ");
-    return {
-      fecha: fechaParte,   // "15/01/2026"
-      tiempo: horaParte,     // "17:05:58"
-      chofer: r[1],
-      dominio: r[2],
-      cargadero: r[3],
-      m3: parseFloat(r[4])
-    };
+    const [fechaParte, horaParte] = r[0].split(" ");
+return {
+  fecha: fechaParte,   // "15/01/2026"
+  tiempo: horaParte || "",
+  chofer: r[1],
+  dominio: r[2],
+  cargadero: r[3],
+  m3: parseFloat(r[4])
+};
+
+
   });
 
   console.log("Datos parseados:", data); // debug
@@ -329,6 +331,14 @@ quick.addEventListener("change", ()=>{
 });
 
 applyBtn.addEventListener("click", applyFilters);
+
+function toDate(str){
+  // str = "15/01/2026"
+  const [d,m,y] = str.split("/").map(Number);
+  return new Date(y, m-1, d);
+}
+
+
 
 /* Primer render */
 applyFilters();
