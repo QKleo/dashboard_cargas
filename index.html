@@ -179,7 +179,11 @@ loadData().catch(err => console.error("Error cargando CSV:", err));
 
 
 /* ====== Utilidades de fecha ====== */
-function toDate(str){ const [y,m,d]=str.split("-").map(Number); return new Date(y, m-1, d); }
+function toDate(str){
+  // str = "15/01/2026"
+  const [d,m,y] = str.split("/").map(Number);
+  return new Date(y, m-1, d);
+}
 function fmt(n){ return new Intl.NumberFormat("es-AR",{maximumFractionDigits:2}).format(n); }
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
 function startOfMonthStr(){
@@ -229,7 +233,7 @@ function renderTable(rows){
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${r.fecha} ${r.tiempo}</td>
-        <td>${r.chofer}</td>
+        <td>${r.conductor}</td>
         <td>${r.dominio}</td>
         <td>${r.cargadero}</td>
         <td>${fmt(r.m3)}</td>
@@ -330,15 +334,7 @@ quick.addEventListener("change", ()=>{
   applyFilters();
 });
 
-//applyBtn.addEventListener("click", applyFilters());
-
-function toDate(str){
-  // str = "15/01/2026"
-  const [d,m,y] = str.split("/").map(Number);
-  return new Date(y, m-1, d);
-}
-
-
+applyBtn.addEventListener("click", applyFilters);
 
 /* Primer render */
 //applyFilters();
