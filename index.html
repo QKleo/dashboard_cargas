@@ -137,7 +137,7 @@
 let data = [];
 
 async function loadData() {
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60-ue7FS_EoJpYkXIkPgdqc3Pq4Tqq57AoNC0SOJOtsq7z-1V29KhEuBMjg4Zn/pub?gid=0&single=true&output=csv"; // pega aquí la URL publicada
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60-ue7FS_EoJpYkXIkPgdqc3Pq4Tqq57AoNC0SOJOtsq7z-1V29KhEuBMjg4Zn/pub?output=csv"; // pega aquí la URL publicada
   const res = await fetch(url);
   const text = await res.text();
 
