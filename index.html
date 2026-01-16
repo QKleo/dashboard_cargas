@@ -156,7 +156,8 @@ async function loadData() {
   applyFilters(); // refrescar dashboard
 }
 
-loadData();
+ loadData();
+loadData().catch(err => console.error("Error cargando CSV:", err));
 
 
 /* ====== Utilidades de fecha ====== */
