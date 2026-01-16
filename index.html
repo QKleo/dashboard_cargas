@@ -180,9 +180,15 @@ loadData().catch(err => console.error("Error cargando CSV:", err));
 
 /* ====== Utilidades de fecha ====== */
 function toDate(str){
-  // str = "15/01/2026"
-  const [d,m,y] = str.split("/").map(Number);
-  return new Date(y, m-1, d);
+  if(str.includes("-")){
+    // YYYY-MM-DD
+    const [y,m,d] = str.split("-").map(Number);
+    return new Date(y, m-1, d);
+  }else{
+    // DD/MM/YYYY
+    const [d,m,y] = str.split("/").map(Number);
+    return new Date(y, m-1, d);
+  }
 }
 function fmt(n){ return new Intl.NumberFormat("es-AR",{maximumFractionDigits:2}).format(n); }
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
@@ -304,6 +310,7 @@ function applyFilters(){
   const fromStr = fromInput.value || todayStr();
   const toStr   = toInput.value   || todayStr();
   const rows = filterData(fromStr, toStr);
+  console.log("Filtered rows:", rows);
   renderKPIs(rows);
   renderBarChart(rows);
   renderTable(rows);
