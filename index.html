@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard de cargas de agua</title>
+<style>
+  :root{
+    --bg:#fffafc;
+    --card:#ffffff;
+    --text:#2b2b2b;
+    --muted:#6b6b6b;
+    --accent:#ff7eb9;
+    --accent2:#7afcff;
+    --accent3:#f9f871;
+    --accent4:#bdb2ff;
+    --border:#f0e6ef;
+  }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+    background:var(--bg); color:var(--text);
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:12px;}
+  header{
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    padding:12px; background:var(--card); border:1px solid var(--border); border-radius:14px;
+  }
+  .title{font-weight:700; font-size:1.1rem;}
+  .filters{display:flex; gap:8px; flex-wrap:wrap;}
+  .filters input, .filters select, .filters button{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; color:var(--text);
+  }
+  .filters button{
+    background:var(--accent); color:#1b1b1b; border:none; font-weight:600;
+  }
+
+  .grid{
+    display:grid; gap:12px; grid-template-columns:1fr; margin-top:12px;
+  }
+  @media(min-width:720px){ .grid{ grid-template-columns:1fr 1fr; } }
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.04);
+  }
+
+  .kpis{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .kpi{
+    background:linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    border-radius:12px; padding:12px; color:#1b1b1b; text-align:center; font-weight:600;
+  }
+  .kpi small{display:block; font-weight:500; color:#222; opacity:0.8;}
+
+  .chart-wrap{position:relative; height:260px;}
+  canvas{width:100%; height:100%;}
+
+  table{width:100%; border-collapse:collapse; font-size:0.95rem;}
+  thead th{
+    text-align:left; padding:10px; border-bottom:2px solid var(--border); color:var(--muted);
+  }
+  tbody td{padding:10px; border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:#fff5fb;}
+
+  .badge{
+    display:inline-block; padding:4px 8px; border-radius:999px; background:var(--accent4); color:#1b1b1b; font-size:0.85rem;
+  }
+
+  .footer-note{margin-top:10px; font-size:0.9rem; color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">Dashboard de cargas de agua</div>
+    <div class="filters">
+      <input type="date" id="fromDate" />
+      <input type="date" id="toDate" />
+      <select id="quickRange">
+        <option value="">Rango rápido</option>
+        <option value="today">Hoy</option>
+        <option value="7d">Últimos 7 días</option>
+        <option value="30d">Últimos 30 días</option>
+        <option value="month">Mes actual</option>
+      </select>
+      <button id="applyBtn">Aplicar</button>
+    </div>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <div class="kpis">
+        <div class="kpi">
+          <div id="kpiTotal">0</div>
+          <small>Total m³</small>
+        </div>
+        <div class="kpi">
+          <div id="kpiViajes">0</div>
+          <small>Viajes</small>
+        </div>
+        <div class="kpi">
+          <div id="kpiPromedio">0</div>
+          <small>Promedio m³ / viaje</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chart-wrap">
+        <canvas id="barChart"></canvas>
+      </div>
+      <div class="footer-note">Suma de m³ por cargadero en el período seleccionado.</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <strong>Detalle de cargas</strong>
+      <span class="badge" id="periodBadge">Periodo: —</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Chofer</th>
+          <th>Vehículo</th>
+          <th>Cargadero</th>
+          <th>m³</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+/* ====== Datos simulados ====== */
+let data = [];
+
+async function loadData() {
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60-ue7FS_EoJpYkXIkPgdqc3Pq4Tqq57AoNC0SOJOtsq7z-1V29KhEuBMjg4Zn/pub?gid=0&single=true&output=csv"; // pega aquí la URL publicada
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // Parsear CSV
+  const rows = text.split("\n").map(r => r.split(","));
+  // Suponiendo columnas: Fecha, Tiempo, Chofer, Dominio, Cargadero, m3
+  data = rows.slice(1).map(r => ({
+    fecha: r[0],
+   // tiempo: r[1],
+    chofer: r[1],
+    dominio: r[2],
+    cargadero: r[3],
+    m3: parseFloat(r[4])
+  }));
+
+  applyFilters(); // refrescar dashboard
+}
+
+loadData();
+
+
+/* ====== Utilidades de fecha ====== */
+function toDate(str){ const [y,m,d]=str.split("-").map(Number); return new Date(y, m-1, d); }
+function fmt(n){ return new Intl.NumberFormat("es-AR",{maximumFractionDigits:2}).format(n); }
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function startOfMonthStr(){
+  const d=new Date(); const s=new Date(d.getFullYear(), d.getMonth(), 1);
+  return s.toISOString().slice(0,10);
+}
+
+/* ====== Estado de filtros ====== */
+const fromInput = document.getElementById("fromDate");
+const toInput   = document.getElementById("toDate");
+const quick     = document.getElementById("quickRange");
+const applyBtn  = document.getElementById("applyBtn");
+const periodBadge = document.getElementById("periodBadge");
+
+/* Default: últimos 7 días */
+(function initDefault(){
+  const end = new Date();
+  const start = new Date(); start.setDate(end.getDate()-7);
+  fromInput.value = start.toISOString().slice(0,10);
+  toInput.value   = end.toISOString().slice(0,10);
+})();
+
+/* ====== Render principal ====== */
+function filterData(fromStr, toStr){
+  const from = toDate(fromStr), to = toDate(toStr);
+  return data.filter(r=>{
+    const d = toDate(r.fecha);
+    return d>=from && d<=to;
+  });
+}
+
+function renderKPIs(rows){
+  const total = rows.reduce((acc,r)=>acc+r.m3,0);
+  const viajes = rows.length;
+  const prom = viajes? total/viajes : 0;
+  document.getElementById("kpiTotal").textContent = fmt(total);
+  document.getElementById("kpiViajes").textContent = fmt(viajes);
+  document.getElementById("kpiPromedio").textContent = fmt(prom);
+}
+
+function renderTable(rows){
+  const tb = document.getElementById("tableBody");
+  tb.innerHTML = "";
+  rows
+    .sort((a,b)=> (a.fecha+a.tiempo).localeCompare(b.fecha+b.tiempo))
+    .forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.fecha} ${r.tiempo}</td>
+        <td>${r.chofer}</td>
+        <td>${r.dominio}</td>
+        <td>${r.cargadero}</td>
+        <td>${fmt(r.m3)}</td>
+      `;
+      tb.appendChild(tr);
+    });
+}
+
+let chartCtx = null, chartApi = null;
+function renderBarChart(rows){
+  const bySite = {};
+  rows.forEach(r=>{ bySite[r.cargadero] = (bySite[r.cargadero]||0) + r.m3; });
+
+  const labels = Object.keys(bySite);
+  const values = labels.map(k=>bySite[k]);
+
+  if(!chartCtx){
+    chartCtx = document.getElementById("barChart").getContext("2d");
+  }
+  // Dibujado simple sin librerías
+  const canvas = chartCtx.canvas;
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+
+  chartCtx.clearRect(0,0,w,h);
+
+  const padding = 24;
+  const axisY = h - padding;
+  const axisX = padding;
+  const maxVal = Math.max(...values, 10);
+  const barW = Math.max(24, (w - padding*2) / Math.max(values.length,1) - 12);
+
+  // Ejes
+  chartCtx.strokeStyle = "#ddd";
+  chartCtx.lineWidth = 1.5;
+  chartCtx.beginPath();
+  chartCtx.moveTo(axisX, padding);
+  chartCtx.lineTo(axisX, axisY);
+  chartCtx.lineTo(w - padding, axisY);
+  chartCtx.stroke();
+
+  // Barras
+  const colors = ["#ff7eb9","#7afcff","#f9f871","#bdb2ff","#ffd6a5","#caffbf"];
+  values.forEach((v,i)=>{
+    const x = axisX + 12 + i*(barW+12);
+    const barH = (v/maxVal) * (axisY - padding - 10);
+    const y = axisY - barH;
+    chartCtx.fillStyle = colors[i % colors.length];
+    chartCtx.fillRect(x, y, barW, barH);
+
+    // Etiqueta valor
+    chartCtx.fillStyle = "#333";
+    chartCtx.font = "12px system-ui";
+    chartCtx.textAlign = "center";
+    chartCtx.fillText(fmt(v), x+barW/2, y-6);
+
+    // Etiqueta cargadero
+    chartCtx.save();
+    chartCtx.translate(x+barW/2, axisY+12);
+    chartCtx.rotate(-Math.PI/6);
+    chartCtx.fillStyle = "#666";
+    chartCtx.fillText(labels[i], 0, 0);
+    chartCtx.restore();
+  });
+}
+
+function applyFilters(){
+  const fromStr = fromInput.value || todayStr();
+  const toStr   = toInput.value   || todayStr();
+  const rows = filterData(fromStr, toStr);
+  renderKPIs(rows);
+  renderBarChart(rows);
+  renderTable(rows);
+  periodBadge.textContent = `Periodo: ${fromStr} a ${toStr}`;
+}
+
+/* Rango rápido */
+quick.addEventListener("change", ()=>{
+  const v = quick.value;
+  const now = new Date();
+  if(v==="today"){
+    const t = todayStr();
+    fromInput.value = t; toInput.value = t;
+  }else if(v==="7d"){
+    const end = now;
+    const start = new Date(); start.setDate(end.getDate()-7);
+    fromInput.value = start.toISOString().slice(0,10);
+    toInput.value   = end.toISOString().slice(0,10);
+  }else if(v==="30d"){
+    const end = now;
+    const start = new Date(); start.setDate(end.getDate()-30);
+    fromInput.value = start.toISOString().slice(0,10);
+    toInput.value   = end.toISOString().slice(0,10);
+  }else if(v==="month"){
+    fromInput.value = startOfMonthStr();
+    toInput.value   = todayStr();
+  }
+  applyFilters();
+});
+
+applyBtn.addEventListener("click", applyFilters);
+
+/* Primer render */
+applyFilters();
+</script>
+</body>
+</html>
