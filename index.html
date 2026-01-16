@@ -135,29 +135,37 @@
 <script>
 /* ====== Datos simulados ====== */
 let data = [];
-
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60-ue7FS_EoJpYkXIkPgdqc3Pq4Tqq57AoNC0SOJOtsq7z-1V29KhEuBMjg4Zn/pub?output=csv"; // pega aquí la URL publicada
+  
 async function loadData() {
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrxXdCdkmC5w0mgz60-ue7FS_EoJpYkXIkPgdqc3Pq4Tqq57AoNC0SOJOtsq7z-1V29KhEuBMjg4Zn/pub?output=csv"; // pega aquí la URL publicada
+  //const url = "TU_URL_DEL_CSV";
   const res = await fetch(url);
   const text = await res.text();
 
-  // Parsear CSV
-  const rows = text.split("\n").map(r => r.split(","));
-  // Suponiendo columnas: Fecha, Tiempo, Chofer, Dominio, Cargadero, m3
+  // Detectar separador (coma o punto y coma)
+  const firstLine = text.split("\n")[0];
+  const sep = firstLine.includes(";") ? ";" : ",";
+
+  const rows = text.trim().split("\n").map(r => r.split(sep));
+
+  console.log("Encabezados:", rows[0]); // para debug
+
   data = rows.slice(1).map(r => ({
     fecha: r[0],
-   // tiempo: r[1],
-    chofer: r[1],
-    dominio: r[2],
-    cargadero: r[3],
-    m3: parseFloat(r[4])
+    tiempo: r[1],
+    chofer: r[2],
+    dominio: r[3],
+    cargadero: r[4],
+    m3: parseFloat(r[5])
   }));
 
-  applyFilters(); // refrescar dashboard
+  console.log("Datos parseados:", data); // debug
+  applyFilters();
 }
 
- loadData();
 loadData().catch(err => console.error("Error cargando CSV:", err));
+
+
 
 
 /* ====== Utilidades de fecha ====== */
