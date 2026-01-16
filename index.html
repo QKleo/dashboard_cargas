@@ -152,11 +152,11 @@ async function loadData() {
 
   data = rows.slice(1).map(r => ({
     fecha: r[0],
-    tiempo: r[1],
-    chofer: r[2],
-    dominio: r[3],
-    cargadero: r[4],
-    m3: parseFloat(r[5])
+    //tiempo: r[1],
+    chofer: r[1],
+    dominio: r[2],
+    cargadero: r[3],
+    m3: parseFloat(r[4])
   }));
 
   console.log("Datos parseados:", data); // debug
